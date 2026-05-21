@@ -1,5 +1,5 @@
 """
-Employee Attrition Prediction - Inference Module
+Employee Attrition Prediction - Inference Modules
 """
 import joblib
 import pandas as pd
