@@ -12,7 +12,7 @@ An end-to-end machine learning system that predicts employee attrition risk usin
 ---
 
 ## Live Demo
-🚀 **[Try it live →](https://employee-attrition-smeet.onrender.com)**
+🚀 **[Try it live →](https://employee-attrition-ml-94rk.onrender.com)**
 
 ---
 
