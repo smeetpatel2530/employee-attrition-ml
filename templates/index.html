@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Employee Attrition Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--primary:#01696f;--primary-dark:#0c4e54;--bg:#f7f6f2;--surface:#fff;--border:#dcd9d5;--text:#28251d;--muted:#7a7974;--radius:.625rem;--shadow:0 4px 20px rgba(0,0,0,.08)}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  header{background:var(--primary);color:#fff;padding:1.25rem 2rem;display:flex;align-items:center;gap:.75rem}
+  header h1{font-size:1.2rem;font-weight:700}
+  .badge{font-size:.72rem;background:rgba(255,255,255,.2);padding:.2rem .7rem;border-radius:100px}
+  .container{max-width:960px;margin:2rem auto;padding:0 1.5rem}
+  .card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:2rem;margin-bottom:1.5rem}
+  .section-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1.25rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem}
+  label{display:block;font-size:.78rem;font-weight:500;color:var(--muted);margin-bottom:.3rem}
+  input,select{width:100%;padding:.55rem .75rem;border:1px solid var(--border);border-radius:.4rem;font-size:.9rem;background:var(--bg);color:var(--text);transition:border-color .2s}
+  input:focus,select:focus{outline:none;border-color:var(--primary)}
+  .btn{display:inline-flex;align-items:center;gap:.5rem;background:var(--primary);color:#fff;border:none;padding:.75rem 2rem;border-radius:var(--radius);font-size:1rem;font-weight:600;cursor:pointer;transition:background .2s;margin-top:1.5rem}
+  .btn:hover{background:var(--primary-dark)}
+  .result{display:none;padding:1.75rem;border-radius:var(--radius);text-align:center;margin-top:1.5rem}
+  .result.show{display:block}
+  .result.high{background:#fde8e8;border:1px solid #f5c0c0}
+  .result.medium{background:#fff8e1;border:1px solid #ffe082}
+  .result.low{background:#e8f5e9;border:1px solid #a5d6a7}
+  .prob{font-size:3rem;font-weight:700;line-height:1}
+  .risk-badge{display:inline-block;padding:.3rem 1rem;border-radius:100px;font-size:.85rem;font-weight:600;margin-top:.75rem}
+  footer{text-align:center;padding:2rem;color:var(--muted);font-size:.78rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>&#x1F4CA; Employee Attrition Predictor</h1>
+  <span class="badge">XGBoost &middot; SMOTE &middot; MLflow &middot; Flask</span>
+</header>
+<div class="container">
+  <div class="card">
+    <p class="section-label">Employee Profile</p>
+    <div class="grid">
+      <div><label>Age</label><input type="number" id="Age" value="34" min="18" max="65"/></div>
+      <div><label>Monthly Income ($)</label><input type="number" id="MonthlyIncome" value="5000"/></div>
+      <div><label>Years at Company</label><input type="number" id="YearsAtCompany" value="5"/></div>
+      <div><label>Distance from Home (km)</label><input type="number" id="DistanceFromHome" value="10"/></div>
+      <div><label>Job Satisfaction (1-4)</label><input type="number" id="JobSatisfaction" value="3" min="1" max="4"/></div>
+      <div><label>Work-Life Balance (1-4)</label><input type="number" id="WorkLifeBalance" value="3" min="1" max="4"/></div>
+      <div><label>Overtime?</label>
+        <select id="OverTime"><option value="1">Yes</option><option value="0" selected>No</option></select>
+      </div>
+      <div><label>Job Role</label>
+        <select id="JobRole">
+          <option value="0">Healthcare Rep</option><option value="1">Human Resources</option>
+          <option value="2">Lab Technician</option><option value="3" selected>Manager</option>
+          <option value="4">Manufacturing Director</option><option value="5">Research Director</option>
+          <option value="6">Research Scientist</option><option value="7">Sales Executive</option>
+          <option value="8">Sales Representative</option>
+        </select>
+      </div>
+      <div><label>Companies Worked At</label><input type="number" id="NumCompaniesWorked" value="2" min="0"/></div>
+      <div><label>Trainings Last Year</label><input type="number" id="TrainingTimesLastYear" value="3"/></div>
+      <div><label>Years in Current Role</label><input type="number" id="YearsInCurrentRole" value="3"/></div>
+      <div><label>Total Working Years</label><input type="number" id="TotalWorkingYears" value="10"/></div>
+    </div>
+    <button class="btn" onclick="predict()">&#x1F50D; Predict Attrition Risk</button>
+    <div class="result" id="result">
+      <div class="prob" id="prob-text">--</div>
+      <p style="color:#555;margin-top:.4rem;font-size:.9rem">Attrition Probability</p>
+      <span class="risk-badge" id="risk-badge">--</span>
+      <p id="result-msg" style="margin-top:1rem;font-size:.88rem;max-width:42ch;margin-inline:auto"></p>
+    </div>
+  </div>
+</div>
+<footer>Built by Smeet Patel &middot; M.Tech CSE &middot; Delhi Technological University &middot; 2026</footer>
+<script>
+async function predict(){
+  const fields=["Age","MonthlyIncome","YearsAtCompany","DistanceFromHome","JobSatisfaction",
+                "WorkLifeBalance","OverTime","JobRole","NumCompaniesWorked",
+                "TrainingTimesLastYear","YearsInCurrentRole","TotalWorkingYears"];
+  const payload={};
+  fields.forEach(f=>{payload[f]=parseFloat(document.getElementById(f).value)||0});
+  try{
+    const res=await fetch("/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!data.success){alert("Error: "+data.error);return;}
+    const r=data.result;
+    document.getElementById("prob-text").textContent=r.attrition_probability+"%";
+    const badge=document.getElementById("risk-badge");
+    badge.textContent=r.risk_level+" Risk";
+    badge.style.background=r.risk_level==="High"?"#f5c0c0":r.risk_level==="Medium"?"#ffe082":"#a5d6a7";
+    document.getElementById("result-msg").textContent=
+      r.attrition_label==="Yes"
+      ?"This employee has elevated attrition risk. Consider scheduling a retention discussion."
+      :"This employee shows low attrition risk. Current engagement appears healthy.";
+    const el=document.getElementById("result");
+    el.className="result show "+r.risk_level.toLowerCase();
+  }catch(e){alert("Network error: "+e.message);}
+}
+</script>
+</body>
+</html>
